@@ -1,0 +1,51 @@
+name: Backend Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Validate and test
+        run: ./gradlew test bootJar
+
+      - name: Build container image
+        run: |
+          docker build \
+            --build-arg CI_COMMIT_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --build-arg CI_COMMIT_SHA="${GITHUB_SHA}" \
+            --build-arg CI_COMMIT_TAG="${GITHUB_REF_NAME}" \
+            -t ghcr.io/fhb-mcce/inenp-k8s-platform-backend:${GITHUB_SHA} \
+            -t ghcr.io/fhb-mcce/inenp-k8s-platform-backend:latest \
+            .
+
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish container image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push ghcr.io/fhb-mcce/inenp-k8s-platform-backend:${GITHUB_SHA}
+          docker push ghcr.io/fhb-mcce/inenp-k8s-platform-backend:latest
