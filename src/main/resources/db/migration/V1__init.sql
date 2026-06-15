@@ -13,12 +13,12 @@ CREATE TABLE FAVORITE_LOCATIONS (
 	user_id varchar(255) not null,
 	given_name varchar(255) not null,
 	given_location varchar(255) not null,
-	longitude double not null,
-	latitude double not null,
+	longitude double precision not null,
+	latitude double precision not null,
 	elevation float not null,
 	nearest_airport varchar(255) not null,
-	nearest_airport_longitude double not null,
-	nearest_airport_latitude double not null,
+	nearest_airport_longitude double precision not null,
+	nearest_airport_latitude double precision not null,
 	nearest_airport_elevation float not null
 );
 
