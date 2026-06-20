@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Implementation of the {@link AviationService} interface.
@@ -75,6 +76,45 @@ public class AviationServiceImpl implements AviationService {
    */
   protected NearestAirportResultStation getNearestAirportFallback(final Exception ex) {
     LOG.error("failed to fetch nearest airport", ex);
+    return null;
+  }
+
+  @CircuitBreaker(name = "getMetar", fallbackMethod = "getMetarFallback")
+  @Retry(name = "getMetar", fallbackMethod = "getMetarFallback")
+  @Override
+  public JsonNode getMetar(final String icao) {
+    if (icao == null || icao.isBlank()) {
+      return null;
+    }
+
+    LOG.info("fetching METAR for airport {}", icao);
+
+    try {
+      final HttpHeaders headers = new HttpHeaders();
+      headers.add(apiConfiguration.getMetar().getAuthorization().getHeader(),
+          apiConfiguration.getMetar().getAuthorization().getValue());
+      final HttpEntity<String> request = new HttpEntity<>(headers);
+      final ResponseEntity<JsonNode> result = restTemplate.exchange(
+          apiConfiguration.getMetar().getUrl(), HttpMethod.GET, request, JsonNode.class, icao);
+      if (result.getStatusCode() != HttpStatus.OK || !result.hasBody()) {
+        return null;
+      }
+      return result.getBody();
+    } catch (RestClientException e) {
+      LOG.error("failed to fetch METAR for airport {}: {}", icao, e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Fallback method for the getMetar method in case of a failure.
+   *
+   * @param icao the airport ICAO code
+   * @param ex the exception that caused the failure
+   * @return null
+   */
+  protected JsonNode getMetarFallback(final String icao, final Exception ex) {
+    LOG.error("failed to fetch METAR for airport {}", icao, ex);
     return null;
   }
 }

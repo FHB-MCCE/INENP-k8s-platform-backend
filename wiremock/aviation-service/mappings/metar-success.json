@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/metar/LOWW"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "station": "LOWW",
+      "flight_rules": "VFR",
+      "raw": "LOWW 201200Z 12008KT CAVOK 22/12 Q1020",
+      "time": {
+        "dt": "2026-06-20T12:00:00Z"
+      }
+    }
+  }
+}

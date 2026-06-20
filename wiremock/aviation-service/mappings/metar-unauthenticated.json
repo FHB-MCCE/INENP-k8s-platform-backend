@@ -1,0 +1,9 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/metar/UNAUTH"
+  },
+  "response": {
+    "status": 401
+  }
+}

@@ -21,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
+import tools.jackson.databind.JsonNode;
 
 @SpringBootTest
 @EnableWireMock(@ConfigureWireMock(name = "aviation-service", baseUrlProperties = "aviation-service.url", portProperties = "aviation-service.port", filesUnderDirectory = "wiremock/aviation-service"))
@@ -43,8 +44,8 @@ public class AviationServiceImplTest {
             null),
         new ApiConfiguration.ApiConnectionInformation("http://forecast.url", 900,
             null),
-        new ApiConfiguration.ApiConnectionInformation("http://metar.url", 900,
-            null),
+        new ApiConfiguration.ApiConnectionInformation(aviationMockServer.baseUrl() + "/metar/{icao}", 900,
+            new ApiConfiguration.ApiConnectionAuthorization("Authorization", "Token token")),
         new ApiConfiguration.ApiConnectionInformation(aviationMockServer.baseUrl() + "/{lon},{lat}", 900,
             new ApiConfiguration.ApiConnectionAuthorization("Authorization", "Token token")));
 
@@ -128,5 +129,45 @@ public class AviationServiceImplTest {
 
     aviationMockServer.verify(1,
         WireMock.getRequestedFor(WireMock.urlEqualTo("/6.0,6.0")));
+  }
+
+  @Test
+  public void testGetMetar() {
+    JsonNode result = service.getMetar("LOWW");
+
+    assertEquals("LOWW", result.get("station").asText());
+    assertEquals("VFR", result.get("flight_rules").asText());
+    aviationMockServer.verify(1,
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/metar/LOWW"))
+            .withHeader("Authorization", WireMock.equalTo("Token token")));
+  }
+
+  @Test
+  public void testGetMetarNull() {
+    assertNull(service.getMetar(null));
+  }
+
+  @Test
+  public void testGetMetarBlank() {
+    assertNull(service.getMetar(" "));
+  }
+
+  @Test
+  public void testGetMetarUpstreamError() {
+    assertNull(service.getMetar("UNAUTH"));
+    aviationMockServer.verify(1,
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/metar/UNAUTH")));
+  }
+
+  @Test
+  public void testGetMetarEmpty() {
+    assertNull(service.getMetar("EMPTY"));
+    aviationMockServer.verify(1,
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/metar/EMPTY")));
+  }
+
+  @Test
+  public void testGetMetarFallback() {
+    assertNull(service.getMetarFallback("LOWW", new RuntimeException()));
   }
 }
