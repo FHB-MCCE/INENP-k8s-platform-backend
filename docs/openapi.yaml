@@ -16,6 +16,8 @@ tags:
     description: Operations related to users.
   - name: forecast
     description: Operations related to weather forecasts.
+  - name: metar
+    description: Operations related to METAR reports.
 paths:
   /api/{userId}/favorite/:
     get:
@@ -153,6 +155,35 @@ paths:
           description: Not Found - Location or forecast not found
         "400":
           description: Bad Request - Invalid request
+  /api/{userId}/{locationId}/metar/:
+    get:
+      tags:
+        - metar
+      operationId: get_metar
+      description: Returns the latest METAR report for the location's nearest airport.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK - Returns the METAR report
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          description: Not Found - Location or nearest airport not found
+        "502":
+          description: Bad Gateway - AVWX did not return a METAR report
   /api/{userId}/favorite/{id}:
     get:
       tags:
